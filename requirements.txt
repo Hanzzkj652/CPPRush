@@ -1,0 +1,17 @@
+requests
+setuptools
+qrcode
+loguru
+Pillow
+retry
+tinydb
+ntplib
+playsound
+retrying
+tabulate
+mixpanel-python
+inquirer
+logtail
+urllib3
+json5
+

@@ -1,0 +1,44 @@
+# 验证
+solver/
+solver/**/*
+
+# 依赖目录
+node_modules/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# 配置文件
+config/
+configs/
+*.ini
+*.conf
+
+# 日志文件
+*.log
+logs/
+
+# 生成的文件
+dist/
+build/
+*.exe
+*.spec
+qrcodes/
+
+# IDE配置
+.idea/
+.vscode/
+*.iml
+.DS_Store
+
+# 用户相关文件
+cookies.json
+machine_config.json
+
+# spec文件
+*.spec
+
+# 其他
+*.ico

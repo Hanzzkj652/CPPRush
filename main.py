@@ -2,6 +2,7 @@ import os
 import inquirer
 import time
 import sys
+import json
 
 from loguru import logger
 from logtail import LogtailHandler

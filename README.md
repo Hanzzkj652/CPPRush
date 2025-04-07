@@ -33,3 +33,6 @@ CPPRush是一个专为CPP平台（AllCPP）设计的自动抢票工具，帮助�
 ## 许可
 
 使用前请阅读并同意EULA: https://docs-cpprush.netlify.app/privacy/EULA
+
+## 协议
+本项目遵循 [GPLv3 协议](./LICENSE)。请仔细阅读协议条款后再使用代码。

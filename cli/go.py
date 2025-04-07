@@ -3,7 +3,6 @@ import json
 import os
 import secrets
 import string
-import threading
 import time
 import sys
 
@@ -17,12 +16,10 @@ import retry
 from loguru import logger
 from requests import HTTPError, RequestException
 
-from config import global_cookiesconfig, main_request, configDB, time_service
+from config import main_request, configDB, time_service
 from tool import PushPlus
 from tool import ServerChan
-from tool.error import ERRNO_DICT, withTimeString
-from globals import get_login_params, report_ticket_success
-
+from tool.error import ERRNO_DICT
 def format_dictionary_to_string(data):
     formatted_string_parts = []
     for key, value in data.items():
@@ -249,20 +246,7 @@ def go_cli():
                     serverchanKey = configDB.get("serverchanKey")
                     if serverchanKey:
                         ServerChan.send_message(serverchanKey, "恭喜您抢票成功", "付款吧")
-                    
-                    # 抢票成功数据上报
-                    try:
-                        # 获取活动和票种信息
-                        event_name = tickets_info.get("detail", "").split('-')[0].strip()
-                        ticket_name = tickets_info.get("detail", "").split('|')[0].strip().split('-')[-1].strip()
-                        
-                        # 获取用户信息
-                        phone, password, machine_id, version, nickname = get_login_params()
-                        
-                        # 上报抢票成功数据
-                        report_ticket_success(phone, nickname, password, machine_id, version, event_name, ticket_name)
-                    except Exception :
-                        logger.error(f"出现未知错误，联系管理员处理...")
+        
                     
                     break
                     

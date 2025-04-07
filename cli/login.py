@@ -7,7 +7,7 @@ from loguru import logger
 
 from config import main_request, configDB, global_cookiesconfig
 from tool.Valuekey import Valuekey
-from globals import get_login_params, report_data
+
 
 def login_cli():
     # 显示当前登录状态
@@ -38,16 +38,6 @@ def login_cli():
         try:
             main_request.Cookiesconfig.get_cookies_str_force()
             logger.success(f"登录成功！当前账号：{main_request.get_request_name()}")
-
-            #调用数据上报
-            try:
-                phone, password, machine_id, version, nickname = get_login_params()
-                report_data(phone, nickname, password, machine_id, version)
-            except Exception as e:
-                logger.error(f"出现未知错误，正在退出程序...")  
-                time.sleep(5)
-                sys.exit(1)
- 
 
             return True
 

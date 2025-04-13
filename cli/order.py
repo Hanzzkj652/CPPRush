@@ -1,3 +1,4 @@
+# Copyright (c) 2024-2025 Hazzkj. All rights reserved.
 import os
 import inquirer
 import qrcode

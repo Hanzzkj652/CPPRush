@@ -1,3 +1,5 @@
+
+# Copyright (c) 2024-2025 Hazzkj. All rights reserved.import json
 import requests
 
 from tool.Cookiesconfig import Cookiesconfig

@@ -3,6 +3,9 @@
 CPPRush是一个专为CPP平台（AllCPP）设计的自动抢票工具，帮助用户在各类热门活动中更快速地抢到心仪的票。
 
 
+> 为防止滥用和倒卖本程序的恶意行为，本程序不全部开源，仅提供部分功能的源代码。
+> 如需完整的源代码，请联系作者。
+
 ![GitHub all releases](https://img.shields.io/github/downloads/Hanzzkj652/CPPRush/total)
 ![GitHub release (with filter)](https://img.shields.io/github/v/release/Hanzzkj652/CPPRush)
 ![GitHub issues](https://img.shields.io/github/issues/Hanzzkj652/CPPRush)

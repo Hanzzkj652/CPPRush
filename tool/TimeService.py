@@ -1,3 +1,5 @@
+# Copyright (c) 2024-2025 Hazzkj. All rights reserved.import json
+
 import ntplib
 import time
 from loguru import logger

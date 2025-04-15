@@ -15,6 +15,13 @@ CPPRush是一个专为CPP平台（AllCPP）设计的自动抢票工具，帮助�
 
 - 详细的使用方法请查看[用户使用文档](https://docs-cpprush.netlify.app/)
 
+## 同类项目
+
+- [cppTickerBuy](https://github.com/mikumifa/cppTickerBuy)
+- [CPPTicketManager](https://github.com/shotoguazi/CPPTicketManager)
+- [CppTicket](https://github.com/QianQiuZy/CppTicket)
+
+
 ## 常见问题
 
 1. **抢票失败怎么办？**

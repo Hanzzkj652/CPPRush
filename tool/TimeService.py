@@ -26,7 +26,7 @@ class TimeService:
                     return "error"
                 time.sleep(0.5)
         logger.success("时间同步成功, 将使用" + self.ntp_server + "时间")
-        # response.offset 为[NTP时钟源 - 设备时钟]的偏差, 使用时需要取反
+
         return format(-(response.offset), ".5f")
 
     def set_timeoffset(self, _timeoffset: str) -> None:
@@ -38,8 +38,6 @@ class TimeService:
             logger.warning("NTP时间同步失败, 使用本地时间")
         else:
             self.timeoffset = float(_timeoffset)
-        # logger.info("设置时间偏差为: " + str(self.timeoffset) + "秒")
-
     def get_timeoffset(self) -> float:
         """
         获取到的timeoffset单位为秒

@@ -53,5 +53,3 @@ class CppRequest:
 if __name__ == "__main__":
     test_request = CppRequest(cookies_config_path="cookies.json")
     res = test_request.get("https://www.allcpp.cn/api/tk/getList.do?type=1&sort=0&index=1&size=10")
-    # print(res.headers)
-    # print(res.text)

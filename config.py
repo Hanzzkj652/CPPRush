@@ -27,7 +27,6 @@ BASE_DIR = get_application_path()
 APP_PATH = BASE_DIR
 TEMP_PATH = BASE_DIR
 
-# loguru.logger.info(f"设置路径, APP_PATH={APP_PATH} TEMP_PATH={TEMP_PATH} BASE_DIR={BASE_DIR}")
 os.makedirs(os.path.join(BASE_DIR, "configs"), exist_ok=True)
 configDB = Valuekey(os.path.join(BASE_DIR, "configs", "config.json"))
 if not configDB.contains("cookie_path"):

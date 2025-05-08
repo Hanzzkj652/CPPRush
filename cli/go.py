@@ -17,7 +17,7 @@ import retry
 from loguru import logger
 from requests import HTTPError, RequestException
 
-from config import main_request, configDB, time_service
+from config import main_request, configDB, time_service, get_application_path
 from tool import PushPlus
 from tool import ServerChan
 from tool.error import ERRNO_DICT
@@ -56,7 +56,7 @@ def generate_qr_code(qr_data):
 def go_cli():
     isRunning = True
     
-    base_dir = os.path.dirname(os.path.realpath(sys.executable))
+    base_dir = get_application_path()
     config_dir = os.path.join(base_dir, "configs")
     os.makedirs(config_dir, exist_ok=True)
     config_files = [f for f in os.listdir(config_dir) if f.endswith('.json') and f not in {'config.json', 'cookies.json','machine_config.json'}]

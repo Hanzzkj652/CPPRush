@@ -6,7 +6,7 @@ Pillow
 retry
 tinydb
 ntplib
-playsound
+playsound==1.2.2
 retrying
 tabulate
 mixpanel-python

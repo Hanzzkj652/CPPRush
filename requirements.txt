@@ -13,5 +13,7 @@ mixpanel-python
 inquirer
 logtail
 urllib3
-json5
+json
+inquirer
+logtail-python
 

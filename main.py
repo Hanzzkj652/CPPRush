@@ -7,13 +7,13 @@ import sys
 import json
 
 from loguru import logger
-from logtail import LogtailHandler
 from json import JSONDecodeError
 
 from cli.settings import settings_cli
 from cli.login import login_cli
 from cli.order import order_cli
 from cli.go import go_cli
+from policy.version import check_version
 
 # 配置日志
 logger.add("app.log")
@@ -87,7 +87,8 @@ def main():
     # 配置日志
     logger.add("app.log")
 
-
+    # 检查版本更新
+    check_version()
 
     # 主循环
     while True:

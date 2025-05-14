@@ -29,6 +29,7 @@ def check_login():
         from config import get_application_path
         config_path = os.path.join(get_application_path(), 'configs', 'cookies.json')
         if not os.path.exists(config_path):
+            
             logger.warning("登录配置文件不存在")
             return False
             

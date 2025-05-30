@@ -6,14 +6,14 @@ import time
 
 from loguru import logger
 
-from config import main_request, configDB, global_cookiesconfig
+from config import config, main_request, global_cookiesconfig
 from tool.Valuekey import Valuekey
 
 
 def login_cli():
-    # 显示当前登录状态
+    # 替换 configDB 为 config
     current_account = main_request.get_request_name()
-    current_cookie_file = configDB.get("cookie_path")
+    current_cookie_file = config.get("cookie_path")
     logger.success(f"当前账号：{current_account}")
     logger.debug(f"当前登录信息文件：{current_cookie_file if current_cookie_file else '无'}")
     
@@ -63,7 +63,7 @@ def login_cli():
                 shutil.copy2(cookie_file, new_cookie_file)
                 
                 # 更新配置
-                configDB.set("cookie_path", new_cookie_file)
+                config.set("cookie_path", new_cookie_file)
                 main_request.Cookiesconfig = global_cookiesconfig
                 
                 logger.success(f"导入成功！当前账号：{main_request.get_request_name()}")
@@ -76,16 +76,16 @@ def login_cli():
         questions = [
             inquirer.Text('serverchan',
                         message='Server酱SendKey (https://sct.ftqq.com/)',
-                        default=configDB.get("serverchanKey") or ''),
+                        default=config.get("serverchanKey") or ''),
             inquirer.Text('pushplus',
                         message='PushPlus Token (https://www.pushplus.plus/)',
-                        default=configDB.get("pushplusToken") or '')
+                        default=config.get("pushplusToken") or '')
         ]
         
         push_answers = inquirer.prompt(questions)
         if push_answers:
-            configDB.insert("serverchanKey", push_answers['serverchan'])
-            configDB.insert("pushplusToken", push_answers['pushplus'])
+            config.insert("serverchanKey", push_answers['serverchan'])
+            config.insert("pushplusToken", push_answers['pushplus'])
             logger.success("推送配置已保存！")
     
     return answers['action'] != '返回主菜单'

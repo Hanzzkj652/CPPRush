@@ -9,11 +9,10 @@ ntplib
 playsound==1.2.2
 retrying
 tabulate
-mixpanel-python
+wheel
 inquirer
 logtail
 urllib3
-json
-inquirer
-logtail-python
+sentry-sdk
+py-machineid
 

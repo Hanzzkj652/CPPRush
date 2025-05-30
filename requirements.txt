@@ -13,7 +13,7 @@ mixpanel-python
 inquirer
 logtail
 urllib3
-json
-inquirer
-logtail-python
+
+sentry-sdk
+py-machineid
 

@@ -6,7 +6,7 @@ import sys
 from loguru import logger
 
 
-version = "v1.0.1"
+version = "v1.0.2"
 
 def check_version():
     """版本更新检查"""

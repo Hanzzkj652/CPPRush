@@ -17,7 +17,7 @@ import retry
 from loguru import logger
 from requests import HTTPError, RequestException
 
-from config import main_request, configDB, time_service, get_application_path
+from config import config, main_request, time_service, get_application_path
 from tool import PushPlus
 from tool import ServerChan
 from tool.error import ERRNO_DICT
@@ -240,11 +240,11 @@ def go_cli():
                     logger.info(f"请使用微信扫描二维码完成支付，二维码已保存到：{qr_path}")
                     
                     # 发送通知
-                    pushplusToken = configDB.get("pushplusToken")
+                    pushplusToken = config.get("pushplusToken")
                     if pushplusToken:
                         PushPlus.send_message(pushplusToken, "恭喜您抢票成功", "付款吧")
                         
-                    serverchanKey = configDB.get("serverchanKey")
+                    serverchanKey = config.get("serverchanKey")
                     if serverchanKey:
                         ServerChan.send_message(serverchanKey, "恭喜您抢票成功", "付款吧")
         

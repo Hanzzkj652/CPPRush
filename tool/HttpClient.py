@@ -1,21 +1,64 @@
-# Copyright (c) 2024-2025 Hazzkj. All rights reserved.import json
-
+# Copyright (c) 2024-2025 Hazzkj. All rights reserved.
+import json
 import time
 import requests
-
+import sentry_sdk
 from loguru import logger
+from tool.UtilityService import Valuekey
 
-from tool.Valuekey import Valuekey
 
+class HttpClient:
+    """整合的HTTP客户端，包含请求和Cookie管理功能"""
+    
+    def __init__(self, headers=None, cookies_config_path="configs/cookies.json"):
+        self.session = requests.Session()
+        self.cookies_config_path = cookies_config_path
+        self.db = Valuekey(cookies_config_path)
+        self.headers = headers or {
+            'accept': 'application/json, text/plain, */*',
+            'accept-language': 'zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6,zh-TW;q=0.5,ja;q=0.4',
+            'cookie': "", 
+            'origin': 'https://cp.allcpp.cn',
+            'priority': 'u=1, i',
+            'referer': 'https://cp.allcpp.cn/',
+            'sec-ch-ua': '"Not)A;Brand";v="99", "Microsoft Edge";v="127", "Chromium";v="127"',
+            'sec-ch-ua-mobile': '?0',
+            'sec-ch-ua-platform': '"Windows"',
+            'sec-fetch-dest': 'empty',
+            'sec-fetch-mode': 'cors',
+            'sec-fetch-site': 'same-site',
+            'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36 Edg/127.0.0.0'
+        }
 
-class Cookiesconfig:
-    def __init__(self, config_file_path):
-        self.db = Valuekey(config_file_path)
+    # HTTP请求方法
+    def get(self, url, data=None):
+        self.headers["cookie"] = self.get_cookies_str()
+        response = self.session.get(url, data=data, headers=self.headers)
+        response.raise_for_status()
+        return response
 
+    def post(self, url, data=None):
+        self.headers["cookie"] = self.get_cookies_str()
+        response = self.session.post(url, data=data, headers=self.headers)
+        response.raise_for_status()
+        return response
+
+    def get_request_name(self):
+        try:
+            if not self.have_cookies():
+                return "未登录"
+            result = self.get("https://www.allcpp.cn/allcpp/circle/getCircleMannage.do").json()
+            return result["result"]["joinCircleList"][0]["nickname"]
+        except Exception as e:
+            sentry_sdk.capture_exception(e)
+            return "未登录"
+
+    def refreshToken(self):
+        self._refresh_token()
+
+    # Cookie管理方法
     @logger.catch
-    def _login_and_save_cookies(
-            self, login_url="https://cp.allcpp.cn/#/login/main"
-    ):
+    def _login_and_save_cookies(self, login_url="https://cp.allcpp.cn/#/login/main"):
         logger.info("开始填写登录信息")
         logger.info("输入手机号：")
         phone = input()
@@ -38,7 +81,7 @@ class Cookiesconfig:
             'sec-fetch-site': 'same-site',
             'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36 Edg/127.0.0.0'
         }
-        while True:
+        try:
             payload = f"account={phone}&password={password}&phoneAccountBindToken=undefined&thirdAccountBindToken=undefined"
             response = requests.request("POST", login_url, headers=headers, data=payload)
             res_json = response.json()
@@ -57,8 +100,12 @@ class Cookiesconfig:
                 phone = input()
                 logger.info("输入密码：")
                 password = input()
+        except Exception as e:
+            sentry_sdk.capture_exception(e)
+            logger.exception(e)
+            return None
 
-    def refreshToken(self):
+    def _refresh_token(self):
         login_url = "https://user.allcpp.cn/api/login/normal"
         headers = {
             'accept': 'application/json, text/plain, */*',
@@ -124,3 +171,5 @@ class Cookiesconfig:
     def get_cookies_str_force(self):
         self._login_and_save_cookies()
         return self.get_cookies_str()
+
+

@@ -26,6 +26,8 @@ build/
 *.exe
 *.spec
 qrcodes/
+*.txt
+
 
 # IDE配置
 .idea/
@@ -35,10 +37,11 @@ qrcodes/
 
 # 用户相关文件
 cookies.json
-machine_config.json
+
 
 # spec文件
 *.spec
 
 # 其他
 *.ico
+password_decrypt_server.py

@@ -13,6 +13,6 @@ wheel
 inquirer
 logtail
 urllib3
-sentry-sdk
+sentry-sdk>=1.40.0
 py-machineid
 

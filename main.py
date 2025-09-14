@@ -1,10 +1,9 @@
-# Copyright (c) 2024-2025 Hazzkj. All rights reserved.import json
+# Copyright (c) 2024-2025 Hazzkj. All rights reserved.
 import os
-import inquirer
+import questionary
 import time
 import sys
 import json
-import sentry_sdk
 
 from loguru import logger
 from json import JSONDecodeError
@@ -13,29 +12,21 @@ from cli.settings import settings_cli
 from cli.login import login_cli
 from cli.order import order_cli
 from cli.go import go_cli
-from policy.version import version
-from policy.version import check_version
-from policy.machineid import get_machine_id,agree_terms
+from cli.push_config import push_config_cli
+from policy.version import check_version, version
+from policy.machineid import agree_terms
+from policy.logging_config import setup_logging, set_user_context, capture_action
 
 
-# 配置日志
-logger.add("app.log")
+# 初始化日志系统和错误监控
+setup_logging(debug=False)
 
-
-# 配置 Sentry
-sentry_sdk.init(
-    dsn="https://b7f65031f7924e2c8719049f70e845f5@glitchtip.svipzkjgpt.site/1",
-    traces_sample_rate=1.0,
-    environment="production",
-    release=version,
-    server_name=get_machine_id()
-)
+# 记录程序启动事件
+capture_action("program_start", version=version, startup_time=time.time())
 
 
 def check_login():
     """检查用户是否已登录
-    Returns:
-        bool: 如果用户已登录且登录凭证有效则返回True，否则返回False
     """
     try:
         # 检查配置文件路径
@@ -99,8 +90,6 @@ def main():
         config_dir = os.path.join(base_dir, "configs")
         os.makedirs(config_dir, exist_ok=True)
         
-        # 配置日志
-        logger.add("app.log")
         agree_terms()
 
         # 检查版本更新
@@ -116,39 +105,50 @@ def main():
                 #不退出程序，登录成功后继续执行
                 continue
             else:
-                pass
+                # 设置用户上下文
+                from config import main_request
+                username = main_request.get_request_name()
+                set_user_context(username)
                 
+                # 记录用户自动登录成功事件
+                capture_action("auto_login_success", username=username, login_time=time.time())
+                
+            selected = questionary.select(
+                "请选择功能",
+                choices=[
+                    '抢票',
+                    '配置管理',
+                    '查看订单',
+                    '登录管理',
+                    '消息推送配置',
+                    '退出程序'
+                ],
+                use_indicator=True
+            ).ask()
 
-            questions = [
-                inquirer.List('action',
-                             message='请选择功能',
-                             choices=[
-                                 '抢票',
-                                 '配置管理',
-                                 '查看订单',
-                                 '登录管理',
-                                 '退出程序'
-                             ])
-            ]
-            
-            answers = inquirer.prompt(questions)
-            if not answers:
+            if selected is None:
+                logger.info("用户取消操作")
                 break
                 
-            if answers['action'] == '配置管理':
+            if selected == '配置管理':
                 settings_cli()
-            elif answers['action'] == '抢票':
+            elif selected == '抢票':
                 go_cli()
-            elif answers['action'] == '查看订单':
+            elif selected == '查看订单':
                 order_cli()
-            elif answers['action'] == '登录管理':
+            elif selected == '登录管理':
                 login_cli()
+            elif selected == '消息推送配置':
+                push_config_cli()
             else:  # 退出程序
+                # 记录程序终止事件
+                capture_action("program_exit", exit_time=time.time(), exit_reason="user_choice")
                 logger.info("感谢使用CPP抢票系统，再见！❤️")
                 time.sleep(3)
                 break
     except Exception as e:
-        sentry_sdk.capture_exception(e)
+        # 记录程序异常终止事件
+        capture_action("program_crash", error_type=type(e).__name__, crash_time=time.time())
         logger.exception("发生未知错误")
         raise
 

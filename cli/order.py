@@ -1,8 +1,10 @@
 # Copyright (c) 2024-2025 Hazzkj. All rights reserved.
+import json
 import os
+import time
 import inquirer
 import qrcode
-
+import sentry_sdk
 
 from loguru import logger
 from tabulate import tabulate
@@ -11,6 +13,7 @@ from datetime import datetime
 from typing import List, Dict
 
 from config import main_request
+from policy.machineid import get_machine_id
 
 def get_orders() -> List[Dict]:
     try:
@@ -84,7 +87,6 @@ def order_cli():
         ]
         
         answers = inquirer.prompt(questions)
-        
         if answers['action'] == '刷新订单列表':
             orders = get_orders()
             display_orders(orders)
@@ -119,6 +121,11 @@ def order_cli():
                     if 'result' in resp and 'code' in resp['result']:
                         # 生成并显示二维码
                         qr_path = generate_qr_code(resp['result']['code'])
+                        # 设置Sentry上下文信息
+                        sentry_sdk.set_tag("machine_id", get_machine_id())
+                        sentry_sdk.set_tag("username", main_request.get_request_name())
+                        sentry_sdk.set_tag("action", "payment_qr_generated")
+                        sentry_sdk.capture_message("用户订单支付二维码生成成功", level="info")
                         
                         # 使用系统默认图片查看器打开二维码
                         try:
@@ -133,6 +140,7 @@ def order_cli():
                         logger.error("获取支付二维码失败，请稍后重试")
                         
                 except Exception as e:
+                    sentry_sdk.capture_exception(e)
                     logger.error(f"支付订单失败：{str(e)}")
         
         else:  # 返回主菜单

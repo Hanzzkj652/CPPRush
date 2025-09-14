@@ -1,6 +1,7 @@
 import json
 import os
 import re
+import time
 import inquirer
 
 from datetime import datetime
@@ -8,6 +9,7 @@ from urllib.parse import urlparse, parse_qs
 from loguru import logger
 
 from config import main_request, get_application_path
+from policy.logging_config import capture_action
 
 buyer_value = []
 addr_value = []
@@ -42,6 +44,10 @@ def settings_cli():
     
     url_answer = inquirer.prompt(questions)
     
+    if url_answer is None:
+        logger.debug("用户取消操作")
+        return
+    
     if url_answer['url_choice'] == '使用指定活动(ID: 4670)':
         ticket_url = "https://www.allcpp.cn/allcpp/ticket/getTicketTypeList.do?eventMainId=4670"
         ticket_id = "4670"
@@ -53,6 +59,9 @@ def settings_cli():
                         validate=lambda _, x: 'http' in x or 'https' in x)
         ]
         answers = inquirer.prompt(questions)
+        if answers is None:
+            logger.debug("用户取消操作")
+            return
         ticket_url = answers['ticket_url']
         ticket_id = extract_id_from_url(ticket_url)
     
@@ -76,8 +85,6 @@ def settings_cli():
         project_name = ticketMain['eventName']
         
         logger.info(f"活动名称：{project_name}")
-        logger.info(f"活动描述：{ticketMain['description']}")
-        logger.info(f"详细信息：{ticketMain['eventDescription']}")
 
         # 构建票种表格数据和选项
         ticket_table = []
@@ -95,29 +102,32 @@ def settings_cli():
             if 'square' in ticket and ticket['square']:
                 square_info = f" [{ticket['square']}]"
             
+            # 保存开票时间信息
+            gp_start_time = None
+            if 'ticketGPStartTime' in ticket and ticket['ticketGPStartTime']:
+                gp_start_time = ticket['ticketGPStartTime']
+            
             ticket_table.append({
                 'name': name,
                 'start_time': start_time,
                 'end_time': end_time,
                 'description': description,
                 'id': ticket_id,
-                'square': ticket.get('square', '')
+                'square': ticket.get('square', ''),
+                'gp_start_time': gp_start_time,
+                'gp_start_time_str': convert_timestamp_to_str(gp_start_time) if gp_start_time else None
             })
             
-            # 构建票种显示信息，包含场次和ID
+            # 构建票种显示信息，包含场次和ID，以及开票时间
             ticket_info = f"{name}{square_info} (ID:{ticket_id}, {start_time}开售)"
+            if gp_start_time:
+                ticket_info += f", 开票时间: {convert_timestamp_to_str(gp_start_time)}"
+                
             ticket_str = f"{name}{square_info} | {start_time} | {end_time} | {description}"
             ticket_choices.append(ticket_info)
             ticket_str_list.append(ticket_str)
 
         ticket_value = [ticket['id'] for ticket in ticketTypeList]
-        
-        # 输出所有票种信息用于调试
-        logger.debug("所有可用票种信息：")
-        for i, ticket in enumerate(ticket_table):
-            square = f" [{ticket['square']}]" if ticket['square'] else ""
-            logger.debug(f"{i+1}. {ticket['name']}{square} (ID:{ticket['id']}, {ticket['start_time']}开售)")
-        
         global buyer_value
         buyer_value = main_request.get(
             url=f"https://www.allcpp.cn/allcpp/user/purchaser/getList.do"
@@ -128,6 +138,10 @@ def settings_cli():
             for item in buyer_value
         ]
         
+        if not ticket_choices:
+            logger.error("错误：未找到可用票种")
+            return
+            
         if not buyer_str_list:
             logger.error("错误：未找到购买人信息，请先在网站配置")
             return
@@ -143,7 +157,11 @@ def settings_cli():
         ]
         
         answers = inquirer.prompt(questions)
-        if not answers['buyers']:
+        if answers is None:
+            logger.info("用户取消操作")
+            return
+            
+        if not answers.get('buyers'):
             logger.error("错误：至少需要选择一个购买人")
             return
             
@@ -152,7 +170,16 @@ def settings_cli():
         selected_ticket_id = int(re.search(r'ID:(\d+)', selected_ticket_info).group(1))
         
         # 找到与ID对应的索引
-        ticket_index = ticket_value.index(selected_ticket_id)
+        ticket_index = None
+        for i, ticket_id in enumerate(ticket_value):
+            if ticket_id == selected_ticket_id:
+                ticket_index = i
+                break
+        
+        if ticket_index is None:
+            logger.error("错误：无法找到所选票种")
+            return
+                
         buyer_indices = [buyer_str_list.index(buyer) for buyer in answers['buyers']]
         
         # 添加场次信息到配置详情
@@ -163,8 +190,18 @@ def settings_cli():
         config = {
             'detail': detail,
             'tickets': selected_ticket_id,
-            'people_cur': [buyer_value[i] for i in buyer_indices]  # 修复此处
+            'people_cur': [buyer_value[i] for i in buyer_indices],
+            'ticket_info': {
+                'name': selected_ticket["name"],
+                'sell_start_time': selected_ticket["start_time"],
+                'sell_end_time': selected_ticket["end_time"]
+            }
         }
+        
+        # 添加开票时间到配置
+        if selected_ticket['gp_start_time']:
+            config['ticket_info']['gp_start_time'] = selected_ticket['gp_start_time_str']
+            config['ticket_info']['gp_start_timestamp'] = selected_ticket['gp_start_time']
         
         config_dir = os.path.join(os.getcwd(), "configs")
         os.makedirs(config_dir, exist_ok=True)
@@ -172,15 +209,13 @@ def settings_cli():
         with open(config_path, 'w', encoding='utf-8') as f:
             json.dump(config, f, ensure_ascii=False, indent=4)
             
-        logger.success(f"配置已保存到：{config_path}")
-        logger.debug("配置内容：")
+        # 记录用户操作
+        capture_action("config_saved", buyer_count=len(buyer_indices))
         logger.debug(json.dumps(config, ensure_ascii=False, indent=2))
         logger.info("按回车键返回主菜单...")
         input()
         
     except Exception as e:
-        logger.error(f"配置生成失败：{str(e)}")
-        import traceback
-        logger.debug(traceback.format_exc())
+        logger.exception(f"配置生成失败：{str(e)}")
         logger.info("按回车键返回主菜单...")
         input()

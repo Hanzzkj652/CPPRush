@@ -10,17 +10,20 @@ import sys
 from datetime import datetime
 from json import JSONDecodeError
 from urllib.parse import quote
+import questionary
 
 import inquirer
 import qrcode
 import retry
+import sentry_sdk
 from loguru import logger
 from requests import HTTPError, RequestException
 
 from config import config, main_request, time_service, get_application_path
-from tool import PushPlus
-from tool import ServerChan
+from tool.push_service import PushService
 from tool.error import ERRNO_DICT
+from policy.machineid import get_machine_id
+
 def format_dictionary_to_string(data):
     formatted_string_parts = []
     for key, value in data.items():
@@ -106,9 +109,6 @@ def go_cli():
                       message='请选择要使用的配置文件',
                       choices=list(filename_map.keys()),
                       carousel=True),
-        inquirer.Text('start_time',
-                     message='请输入抢票时间（格式：YYYY-MM-DD HH:mm:ss，留空则立即开始）',
-                     validate=lambda _, x: not x or datetime.strptime(x, '%Y-%m-%d %H:%M:%S')),
         inquirer.Text('interval',
                      message='请输入抢票间隔（毫秒）',
                      validate=lambda _, x: x.isdigit() and int(x) >= 1,
@@ -142,10 +142,24 @@ def go_cli():
         input()
         return False
     
-    # 转换时间格式
-    start_time = answers['start_time']
-    if start_time:
-        start_time = datetime.strptime(start_time, '%Y-%m-%d %H:%M:%S').strftime('%Y-%m-%dT%H:%M:%S')
+    # 从配置文件中获取开票时间
+    start_time = None
+    if 'ticket_info' in tickets_info and 'gp_start_time' in tickets_info['ticket_info']:
+        gp_start_time = tickets_info['ticket_info']['gp_start_time']
+        start_time = datetime.strptime(gp_start_time, '%Y-%m-%d %H:%M:%S').strftime('%Y-%m-%dT%H:%M:%S')
+    else:
+        # 如果配置文件中没有开票时间，提示用户输入
+        logger.warning("配置文件中未找到开票时间信息，请手动输入")
+        start_time_input = questionary.text(
+            "请输入抢票时间（格式：YYYY-MM-DD HH:mm:ss，留空则立即开始）:"
+        ).ask()
+        
+        if start_time_input:
+            try:
+                start_time = datetime.strptime(start_time_input, '%Y-%m-%d %H:%M:%S').strftime('%Y-%m-%dT%H:%M:%S')
+            except ValueError:
+                logger.error("时间格式错误，将立即开始抢票")
+                start_time = None
     
     interval = int(answers['interval'])
     mode = 0 if answers['mode'] == '无限' else 1
@@ -155,7 +169,7 @@ def go_cli():
     try:
         # 等待开始时间
         if start_time:
-            logger.info("等待开始时间")
+            logger.info(f"将在 {start_time.replace('T', ' ')} 开始抢票")
             timeoffset = time_service.get_timeoffset()
             logger.info(f"时间偏差已被设置为: {timeoffset}s")
             
@@ -224,6 +238,15 @@ def go_cli():
 
                 if errno:
                     logger.success("抢票成功😊！生成支付二维码...")
+                    # 设置Sentry上下文信息
+                    sentry_sdk.set_tag("machine_id", get_machine_id())
+                    sentry_sdk.set_tag("username", main_request.get_request_name())
+                    sentry_sdk.set_tag("action", "ticket_success")
+                    sentry_sdk.set_context("ticket_info", {
+                        "people_count": len(tickets_info.get('people_cur', [])),
+                        "attempt_number": total_attempts - left_time + 1
+                    })
+                    sentry_sdk.capture_message("用户抢票成功", level="info")
                     # 生成并显示二维码
                     qr = qrcode.QRCode()
                     qr.add_data(request_result['result']['code'])
@@ -242,11 +265,11 @@ def go_cli():
                     # 发送通知
                     pushplusToken = config.get("pushplusToken")
                     if pushplusToken:
-                        PushPlus.send_message(pushplusToken, "恭喜您抢票成功", "付款吧")
+                        PushService.send_pushplus(pushplusToken, "恭喜您抢票成功", "付款吧")
                         
                     serverchanKey = config.get("serverchanKey")
                     if serverchanKey:
-                        ServerChan.send_message(serverchanKey, "恭喜您抢票成功", "付款吧")
+                        PushService.send_serverchan(serverchanKey, "恭喜您抢票成功", "付款吧")
         
                     
                     break
@@ -263,6 +286,7 @@ def go_cli():
                 if str(e) == "同证件限购一张！":
                     break
             except Exception as e:
+                sentry_sdk.capture_exception(e)
                 logger.exception(e)
                 logger.error(f"发生错误：{str(e)}")
 
@@ -271,6 +295,7 @@ def go_cli():
     except KeyboardInterrupt:
         logger.info("已手动停止抢票")
     except Exception as e:
+        sentry_sdk.capture_exception(e)
         logger.exception(e)
         logger.error(f"发生错误：{str(e)}")
 

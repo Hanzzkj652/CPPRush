@@ -32,38 +32,20 @@ def extract_id_from_url(url):
 def settings_cli():
     logger.warning("\n提示：请确保已在 https://cp.allcpp.cn/ticket/prePurchaser 配置购买人信息")
     
-    # 修改为提供选择：使用默认URL或输入自定义URL
+    # 修改为只提供自定义URL输入
     questions = [
-        inquirer.List('url_choice',
-                    message='请选择票务来源',
-                    choices=[
-                        '使用指定活动(ID: 4670)即CP31',
-                        '输入自定义网址'
-                    ])
+        inquirer.Text('ticket_url',
+                    message='请输入想要抢票的网址',
+                    validate=lambda _, x: 'http' in x or 'https' in x)
     ]
     
-    url_answer = inquirer.prompt(questions)
-    
-    if url_answer is None:
+    answers = inquirer.prompt(questions)
+    if answers is None:
         logger.debug("用户取消操作")
         return
-    
-    if url_answer['url_choice'] == '使用指定活动(ID: 4670)':
-        ticket_url = "https://www.allcpp.cn/allcpp/ticket/getTicketTypeList.do?eventMainId=4670"
-        ticket_id = "4670"
-    else:
-        # 用户选择输入自定义URL
-        questions = [
-            inquirer.Text('ticket_url',
-                        message='请输入想要抢票的网址',
-                        validate=lambda _, x: 'http' in x or 'https' in x)
-        ]
-        answers = inquirer.prompt(questions)
-        if answers is None:
-            logger.debug("用户取消操作")
-            return
-        ticket_url = answers['ticket_url']
-        ticket_id = extract_id_from_url(ticket_url)
+        
+    ticket_url = answers['ticket_url']
+    ticket_id = extract_id_from_url(ticket_url)
     
     if not ticket_id:
         logger.error("错误：无效的网址，未能提取活动ID")

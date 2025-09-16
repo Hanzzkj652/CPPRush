@@ -7,7 +7,7 @@ import sentry_sdk
 from loguru import logger
 
 
-version = "v1.0.5"
+version = "v1.0.6"
 
 def check_version():
     """版本更新检查"""

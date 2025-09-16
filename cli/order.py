@@ -66,8 +66,10 @@ def generate_qr_code(qr_data: str) -> str:
     qr.make(fit=True)
     qr_image = qr.make_image()
     
-    # 保存二维码图片到项目configs目录
-    temp_dir = os.path.join(os.getcwd(), "configs", "qrcodes")
+    # 使用应用程序基础目录
+    from config import get_application_path
+    base_dir = get_application_path()
+    temp_dir = os.path.join(base_dir, "configs", "qrcodes")
     os.makedirs(temp_dir, exist_ok=True)
     qr_path = os.path.join(temp_dir, "payment_qr.png")
     qr_image.save(qr_path)

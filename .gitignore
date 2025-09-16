@@ -37,10 +37,11 @@ qrcodes/
 
 # 用户相关文件
 cookies.json
-
-
+.empty_configs_for_build
+.empty_logs_for_build
 # spec文件
 *.spec
+build.py
 
 # 其他
 *.ico

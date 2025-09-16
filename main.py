@@ -86,9 +86,15 @@ def check_login():
 def main():
     try:
         # 确保必要的目录存在    
-        base_dir = os.path.dirname(os.path.realpath(sys.executable))
+        base_dir = os.path.dirname(os.path.realpath(sys.executable)) if getattr(sys, "frozen", False) else os.path.dirname(os.path.abspath(__file__))
         config_dir = os.path.join(base_dir, "configs")
+        logs_dir = os.path.join(base_dir, "logs")
+        qrcodes_dir = os.path.join(config_dir, "qrcodes")
+        
+        # 创建所有必要的目录结构
         os.makedirs(config_dir, exist_ok=True)
+        os.makedirs(logs_dir, exist_ok=True)
+        os.makedirs(qrcodes_dir, exist_ok=True)
         
         agree_terms()
 

@@ -25,7 +25,12 @@ class Config:
     def __init__(self):
         self.base_dir = get_application_path()
         self.config_dir = os.path.join(self.base_dir, "configs")
+        # 确保配置目录存在
         os.makedirs(self.config_dir, exist_ok=True)
+        
+        # 确保qrcodes目录存在
+        qrcodes_dir = os.path.join(self.config_dir, "qrcodes")
+        os.makedirs(qrcodes_dir, exist_ok=True)
         
         self.cookie_path = os.path.join(self.config_dir, "cookies.json")
         self.config_path = os.path.join(self.config_dir, "config.json")

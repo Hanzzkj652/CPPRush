@@ -1,6 +1,5 @@
 # Copyright (c) 2024-2025 Hazzkj. All rights reserved.
 import json
-
 import os
 import sys
 from pathlib import Path
@@ -25,14 +24,37 @@ class Config:
     def __init__(self):
         self.base_dir = get_application_path()
         self.config_dir = os.path.join(self.base_dir, "configs")
-        # 确保配置目录存在
-        os.makedirs(self.config_dir, exist_ok=True)
         
-        # 确保qrcodes目录存在
-        qrcodes_dir = os.path.join(self.config_dir, "qrcodes")
-        os.makedirs(qrcodes_dir, exist_ok=True)
+        # 确保配置目录存在并可写
+        try:
+            os.makedirs(self.config_dir, exist_ok=True)
+            
+            # 测试目录可写性
+            test_file = os.path.join(self.config_dir, "write_test.tmp")
+            with open(test_file, 'w') as f:
+                f.write("test")
+            os.remove(test_file)
+            
+            # 确保qrcodes目录存在
+            qrcodes_dir = os.path.join(self.config_dir, "qrcodes")
+            os.makedirs(qrcodes_dir, exist_ok=True)
+            
+            self.cookie_path = os.path.join(self.config_dir, "cookies.json")
+            
+        except (PermissionError, IOError) as e:
+            # 如果程序目录不可写，则使用用户主目录
+            logger.warning(f"无法在程序目录创建配置: {e}，将使用用户主目录")
+            user_home = os.path.expanduser("~")
+            app_config_dir = os.path.join(user_home, "CPPRush")
+            self.config_dir = os.path.join(app_config_dir, "configs")
+            os.makedirs(self.config_dir, exist_ok=True)
+            
+            qrcodes_dir = os.path.join(self.config_dir, "qrcodes")
+            os.makedirs(qrcodes_dir, exist_ok=True)
+            
+            self.cookie_path = os.path.join(self.config_dir, "cookies.json")
+            logger.info(f"已将配置目录设置为: {self.config_dir}")
         
-        self.cookie_path = os.path.join(self.config_dir, "cookies.json")
         self.config_path = os.path.join(self.config_dir, "config.json")
         self.settings = {}
         self.load_settings()
@@ -40,7 +62,7 @@ class Config:
     def load_settings(self):
         """加载设置"""
         self.settings = {
-            "cookie_path": self.cookie_path
+            "cookie_path": self.cookie_path 
         }
         
         # 从文件加载配置
@@ -49,6 +71,7 @@ class Config:
                 with open(self.config_path, 'r', encoding='utf-8') as f:
                     file_settings = json.load(f)
                     self.settings.update(file_settings)
+                    self.settings["cookie_path"] = self.cookie_path
             except (json.JSONDecodeError, IOError) as e:
                 logger.exception(f"加载配置文件失败: {str(e)}")
 

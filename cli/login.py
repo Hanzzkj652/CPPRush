@@ -6,7 +6,7 @@ import time
 
 from loguru import logger
 
-from config import config, main_request, global_cookiesconfig
+from config import config, main_request, get_application_path
 from tool.UtilityService import Valuekey
 from policy.logging_config import capture_action, set_user_context
 
@@ -56,11 +56,16 @@ def login_cli():
         file_answer = inquirer.prompt(questions)
         if file_answer:
             try:
-                # 复制登录信息文件
+                # 复制登录信息文件到配置目录
                 import shutil
                 cookie_file = file_answer['cookie_file']
-                new_cookie_file = os.path.join(os.getcwd(), "configs", "cookies.json")
+                new_cookie_file = config.cookie_path
+                
+                # 确保目标目录存在
+                os.makedirs(os.path.dirname(new_cookie_file), exist_ok=True)
+                
                 shutil.copy2(cookie_file, new_cookie_file)
+                logger.debug(f"已将cookies文件复制到: {new_cookie_file}")
                 
                 # 更新配置
                 config.set("cookie_path", new_cookie_file)

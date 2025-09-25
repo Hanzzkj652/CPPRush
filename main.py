@@ -29,12 +29,12 @@ def check_login():
     """检查用户是否已登录
     """
     try:
-        # 检查配置文件路径
-        from config import get_application_path
-        config_path = os.path.join(get_application_path(), 'configs', 'cookies.json')
+        # 使用配置实例获取cookie路径
+        from config import config
+        config_path = config.cookie_path
+        
         if not os.path.exists(config_path):
-            
-            logger.warning("登录配置文件不存在")
+            logger.warning(f"登录配置文件不存在: {config_path}")
             return False
             
         # 检查文件大小
@@ -85,16 +85,19 @@ def check_login():
 
 def main():
     try:
-        # 确保必要的目录存在    
-        base_dir = os.path.dirname(os.path.realpath(sys.executable)) if getattr(sys, "frozen", False) else os.path.dirname(os.path.abspath(__file__))
-        config_dir = os.path.join(base_dir, "configs")
-        logs_dir = os.path.join(base_dir, "logs")
-        qrcodes_dir = os.path.join(config_dir, "qrcodes")
+        from config import config
         
-        # 创建所有必要的目录结构
-        os.makedirs(config_dir, exist_ok=True)
-        os.makedirs(logs_dir, exist_ok=True)
-        os.makedirs(qrcodes_dir, exist_ok=True)
+        # 确保日志目录存在
+        base_dir = os.path.dirname(os.path.realpath(sys.executable)) if getattr(sys, "frozen", False) else os.path.dirname(os.path.abspath(__file__))
+        logs_dir = os.path.join(base_dir, "logs")
+        try:
+            os.makedirs(logs_dir, exist_ok=True)
+        except (PermissionError, IOError):
+            # 如果程序目录不可写，使用用户主目录下的日志目录
+            user_home = os.path.expanduser("~")
+            logs_dir = os.path.join(user_home, "CPPRush", "logs")
+            os.makedirs(logs_dir, exist_ok=True)
+            logger.info(f"已将日志目录设置为: {logs_dir}")
         
         agree_terms()
 

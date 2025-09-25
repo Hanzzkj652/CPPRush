@@ -3,6 +3,7 @@ import json
 import ntplib
 import time
 import sentry_sdk
+import os
 from loguru import logger
 from tinydb import TinyDB, Query
 
@@ -50,7 +51,34 @@ class TimeService:
 
 class Valuekey:
     def __init__(self, db_path='kv_db.json'):
-        self.db = TinyDB(db_path, indent=4)
+        try:
+            # 确保数据库目录存在
+            db_dir = os.path.dirname(db_path)
+            if db_dir and not os.path.exists(db_dir):
+                os.makedirs(db_dir, exist_ok=True)
+            
+            # 尝试创建或访问数据库文件
+            self.db = TinyDB(db_path, indent=4)
+            
+            # 测试数据库是否可写
+            test_key = "__write_test__"
+            self.db.insert({
+                'key': test_key, 
+                'value': "test_value"
+            })
+            self.db.remove(Query().key == test_key)
+            
+        except (PermissionError, IOError) as e:
+            # 如果指定位置不可写，则在用户主目录创建备用数据库
+            logger.warning(f"无法在指定位置创建数据库: {e}，将使用用户主目录")
+            user_home = os.path.expanduser("~")
+            backup_dir = os.path.join(user_home, "CPPRush", "configs")
+            os.makedirs(backup_dir, exist_ok=True)
+            
+            backup_path = os.path.join(backup_dir, os.path.basename(db_path))
+            logger.info(f"使用备用数据库路径: {backup_path}")
+            self.db = TinyDB(backup_path, indent=4)
+            
         self.KeyValue = Query()
 
     def insert(self, key, value):

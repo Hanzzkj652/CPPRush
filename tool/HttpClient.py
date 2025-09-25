@@ -1,6 +1,7 @@
 # Copyright (c) 2024-2025 Hazzkj. All rights reserved.
 import json
 import time
+import os
 import requests
 import sentry_sdk
 from loguru import logger
@@ -10,10 +11,38 @@ from tool.UtilityService import Valuekey
 class HttpClient:
     """整合的HTTP客户端，包含请求和Cookie管理功能"""
     
-    def __init__(self, headers=None, cookies_config_path="configs/cookies.json"):
+    def __init__(self, headers=None, cookies_config_path=None):
+        from config import get_application_path
         self.session = requests.Session()
-        self.cookies_config_path = cookies_config_path
-        self.db = Valuekey(cookies_config_path)
+        
+        # cookies配置路径处理
+        if cookies_config_path:
+            self.cookies_config_path = cookies_config_path
+        else:
+            # 检查程序目录是否可写
+            base_path = get_application_path()
+            config_dir = os.path.join(base_path, "configs")
+            test_path = os.path.join(config_dir, "write_test.tmp")
+            
+            try:
+                os.makedirs(config_dir, exist_ok=True)
+                with open(test_path, 'w') as f:
+                    f.write("test")
+                os.remove(test_path)
+                self.cookies_config_path = os.path.join(config_dir, "cookies.json")
+            except (PermissionError, IOError):
+                # 如果不可写，使用用户主目录
+                user_home = os.path.expanduser("~")
+                app_config_dir = os.path.join(user_home, "CPPRush", "configs")
+                os.makedirs(app_config_dir, exist_ok=True)
+                self.cookies_config_path = os.path.join(app_config_dir, "cookies.json")
+                logger.info(f"使用用户主目录存储cookies: {self.cookies_config_path}")
+        
+        # 确保cookies文件所在目录存在
+        os.makedirs(os.path.dirname(self.cookies_config_path), exist_ok=True)
+        logger.debug(f"Cookies配置路径: {self.cookies_config_path}")
+        
+        self.db = Valuekey(self.cookies_config_path)
         self.headers = headers or {
             'accept': 'application/json, text/plain, */*',
             'accept-language': 'zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6,zh-TW;q=0.5,ja;q=0.4',

@@ -4,7 +4,7 @@ import re
 import time
 import inquirer
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from urllib.parse import urlparse, parse_qs
 from loguru import logger
 
@@ -68,44 +68,47 @@ def settings_cli():
         
         logger.info(f"活动名称：{project_name}")
 
+        # 获取当前时间
+        current_time = int(time.time())
+
         # 构建票种表格数据和选项
         ticket_table = []
         ticket_choices = []
         ticket_str_list = []
         for ticket in ticketTypeList:
             name = ticket['ticketName']
-            start_time = convert_timestamp_to_str(ticket['sellStartTime'])
-            end_time = convert_timestamp_to_str(ticket['sellEndTime'])
+            sell_start_time = convert_timestamp_to_str(ticket['sellStartTime'])
+            sell_end_time = convert_timestamp_to_str(ticket['sellEndTime'])
             description = ticket['ticketDescription']
             ticket_id = ticket['id']
             
-            # 添加场次信息（如果存在）
+            # 添加场次信息
             square_info = ""
             if 'square' in ticket and ticket['square']:
                 square_info = f" [{ticket['square']}]"
             
-            # 保存开票时间信息
-            gp_start_time = None
-            if 'ticketGPStartTime' in ticket and ticket['ticketGPStartTime']:
-                gp_start_time = ticket['ticketGPStartTime']
+            real_open_time = datetime.fromtimestamp(ticket['sellStartTime'] / 1000)
+            real_open_time_str = sell_start_time
+            open_timer_seconds = int((ticket['sellStartTime'] / 1000) - current_time)
             
+            # 记录时间信息到票种表格
             ticket_table.append({
                 'name': name,
-                'start_time': start_time,
-                'end_time': end_time,
+                'start_time': sell_start_time,         # 销售开始时间
+                'end_time': sell_end_time,             # 销售结束时间
                 'description': description,
                 'id': ticket_id,
                 'square': ticket.get('square', ''),
-                'gp_start_time': gp_start_time,
-                'gp_start_time_str': convert_timestamp_to_str(gp_start_time) if gp_start_time else None
+                'open_time': real_open_time_str,     
+                'open_timer': open_timer_seconds,      # 开抢倒计时（秒）
+                'open_timestamp': int(real_open_time.timestamp()),  # 开抢时间戳
+                'sell_start_time': ticket['sellStartTime'] 
             })
             
-            # 构建票种显示信息，包含场次和ID，以及开票时间
-            ticket_info = f"{name}{square_info} (ID:{ticket_id}, {start_time}开售)"
-            if gp_start_time:
-                ticket_info += f", 开票时间: {convert_timestamp_to_str(gp_start_time)}"
+            # 创建票种显示信息，只显示开售时间，不再显示抢票时间
+            ticket_info = f"{name}{square_info} (ID:{ticket_id}, {sell_start_time}开售)"
                 
-            ticket_str = f"{name}{square_info} | {start_time} | {end_time} | {description}"
+            ticket_str = f"{name}{square_info} | {sell_start_time} | {sell_end_time} | {description}"
             ticket_choices.append(ticket_info)
             ticket_str_list.append(ticket_str)
 
@@ -173,19 +176,17 @@ def settings_cli():
             'detail': detail,
             'tickets': selected_ticket_id,
             'people_cur': [buyer_value[i] for i in buyer_indices],
+            'project_name': project_name,
             'ticket_info': {
                 'name': selected_ticket["name"],
                 'sell_start_time': selected_ticket["start_time"],
-                'sell_end_time': selected_ticket["end_time"]
+                'sell_end_time': selected_ticket["end_time"],
+                'sell_start_timestamp': selected_ticket["sell_start_time"]
             }
         }
         
-        # 添加开票时间到配置
-        if selected_ticket['gp_start_time']:
-            config['ticket_info']['gp_start_time'] = selected_ticket['gp_start_time_str']
-            config['ticket_info']['gp_start_timestamp'] = selected_ticket['gp_start_time']
         
-        config_dir = os.path.join(os.getcwd(), "configs")
+        config_dir = os.path.join(get_application_path(), "configs")
         os.makedirs(config_dir, exist_ok=True)
         config_path = os.path.join(config_dir, filename_filter(detail) + ".json")
         with open(config_path, 'w', encoding='utf-8') as f:

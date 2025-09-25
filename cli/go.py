@@ -6,7 +6,7 @@ import secrets
 import string
 import time
 import sys
-
+import random
 from datetime import datetime
 from json import JSONDecodeError
 from urllib.parse import quote
@@ -142,15 +142,23 @@ def go_cli():
         logger.info("按回车键返回主菜单...")
         input()
         return False
+
+    # 提取项目名称
+    project_name = tickets_info.get("project_name", "未知项目")
     
     # 从配置文件中获取开票时间
     start_time = None
-    if 'ticket_info' in tickets_info and 'gp_start_time' in tickets_info['ticket_info']:
-        gp_start_time = tickets_info['ticket_info']['gp_start_time']
-        start_time = datetime.strptime(gp_start_time, '%Y-%m-%d %H:%M:%S').strftime('%Y-%m-%dT%H:%M:%S')
-    else:
-        # 如果配置文件中没有开票时间，提示用户输入
-        logger.warning("配置文件中未找到开票时间信息，请手动输入")
+    if 'ticket_info' in tickets_info:
+        ticket_info = tickets_info['ticket_info']
+
+        if 'sell_start_time' in ticket_info:
+            sell_start_time = ticket_info['sell_start_time']
+            start_time = datetime.strptime(sell_start_time, '%Y-%m-%d %H:%M:%S').strftime('%Y-%m-%dT%H:%M:%S')
+            logger.info(f"配置中已有销售开始时间: {sell_start_time}")
+
+    if not start_time:
+        # 如果配置文件中没有销售开始时间，提示用户输入
+        logger.warning("配置文件中未找到销售开始时间，请手动输入")
         start_time_input = questionary.text(
             "请输入抢票时间（格式：YYYY-MM-DD HH:mm:ss，留空则立即开始）:"
         ).ask()
@@ -217,17 +225,30 @@ def go_cli():
             ).json()
             
             err = ret["isSuccess"]
-            logger.debug(f'状态码: {err}({ERRNO_DICT.get(err, "未知错误码")}), 请求体: {ret}')
+            msg = ret.get("message", "")
+            error_code = ERRNO_DICT.get(err, "未知错误码")
+            logger.info(f'状态码: {err}({error_code}), 消息: {msg}, 请求体: {ret}')
+            logger.debug(f'状态码: {err}({error_code}), 消息: {msg}, 请求体: {ret}')
             
-            if ret["message"] == "同证件限购一张！":
+            if msg == "同证件限购一张！":
                 isRunning = False
                 raise ValueError("同证件限购一张！")
 
-            if ret["message"] == "请求过于频繁，请稍后再试":
+            if msg == "请求过于频繁，请稍后再试":
                 logger.info("出现风控，重新登录")
+                main_request.refreshToken()
 
-            if not ret["isSuccess"]:
-                raise HTTPError("重试次数过多，重新准备订单")
+            # 添加对"系统繁忙"的处理
+            if msg == "系统繁忙，请稍后再试" or "繁忙" in msg:
+                # 生成一个较大的随机延迟，单位为秒，范围为0.5到3秒之间
+                random_delay = random.uniform(0.5, 3.0)
+                logger.warning(f"系统繁忙，添加随机延迟 {random_delay:.2f} 秒")
+                time.sleep(random_delay)
+                # 不将这种情况作为失败，而是重新尝试
+                raise HTTPError("系统繁忙，重试")
+
+            if not err:
+                raise HTTPError(f"抢票失败: {msg or error_code}")
                 
             return ret, err
         
@@ -248,31 +269,35 @@ def go_cli():
                         "attempt_number": total_attempts - left_time + 1
                     })
                     sentry_sdk.capture_message("用户抢票成功", level="info")
+                    
                     # 生成并显示二维码
+                    qr_path = generate_qr_code(request_result['result']['code'])
+                    # 在控制台打印二维码
                     qr = qrcode.QRCode()
                     qr.add_data(request_result['result']['code'])
                     qr.make(fit=True)
-                    qr_image = qr.make_image()
-                    qr_path = os.path.join(base_dir, "configs", "qrcodes", "payment_qr.png")
-                    os.makedirs(os.path.dirname(qr_path), exist_ok=True)
-                    qr_image.save(qr_path)
-                    # 在控制台打印二维码
                     qr.print_ascii()
+                    
                     # 使用系统默认程序打开二维码图片
-                    os.startfile(qr_path)
+                    try:
+                        os.startfile(qr_path)
+                    except:
+                        logger.warning(f"无法自动打开图片，请手动访问: {qr_path}")
 
                     logger.info(f"请使用微信扫描二维码完成支付，二维码已保存到：{qr_path}")
                     
                     # 发送通知
                     pushplusToken = config.get("pushplusToken")
                     if pushplusToken:
-                        PushService.send_pushplus(pushplusToken, "恭喜您抢票成功", "付款吧")
-                        
+                        ticket_name = tickets_info.get("ticket_info", {}).get("name", "未知票种")
+                        content = f"恭喜您抢到了{project_name}的{ticket_name}票，请尽快付款！"
+                        PushService.send_pushplus(pushplusToken, content, "抢票成功")
+
                     serverchanKey = config.get("serverchanKey")
                     if serverchanKey:
-                        PushService.send_serverchan(serverchanKey, "恭喜您抢票成功", "付款吧")
-        
-                    
+                        content = f"恭喜您抢到了{project_name}的{ticket_name}票，请尽快付款！"
+                        PushService.send_serverchan(serverchanKey, content, "抢票成功")
+
                     break
                     
                 if mode == 1:

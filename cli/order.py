@@ -94,12 +94,12 @@ def order_cli():
             display_orders(orders)
             
         elif answers['action'] == '支付订单':
-            # orders = get_orders()
+            orders = get_orders()
             if not orders:
                 logger.info("没有可支付的订单")
                 continue
-                
-            # display_orders(orders)
+
+            display_orders(orders)
             
             questions = [
                 inquirer.List('order_index',

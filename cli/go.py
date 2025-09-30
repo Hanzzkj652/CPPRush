@@ -202,6 +202,7 @@ def go_cli():
                             pass
                         break
                 else:
+                    logger.warning("开票时间已过，立即开始抢票")
                     break
         
         # 开始抢票
@@ -280,16 +281,23 @@ def go_cli():
                     
                     # 使用系统默认程序打开二维码图片
                     try:
-                        os.startfile(qr_path)
-                    except:
+                        import platform
+                        system = platform.system()
+                        if system == 'Windows':
+                            os.startfile(qr_path)
+                        elif system == 'Darwin':  # macOS
+                            os.system(f'open "{qr_path}"')
+                        else:  # Linux
+                            os.system(f'xdg-open "{qr_path}"')
+                    except Exception as e:
                         logger.warning(f"无法自动打开图片，请手动访问: {qr_path}")
 
                     logger.info(f"请使用微信扫描二维码完成支付，二维码已保存到：{qr_path}")
-                    
+
                     # 发送通知
+                    ticket_name = tickets_info.get("ticket_info", {}).get("name", "未知票种")
                     pushplusToken = config.get("pushplusToken")
                     if pushplusToken:
-                        ticket_name = tickets_info.get("ticket_info", {}).get("name", "未知票种")
                         content = f"恭喜您抢到了{project_name}的{ticket_name}票，请尽快付款！"
                         PushService.send_pushplus(pushplusToken, content, "抢票成功")
 

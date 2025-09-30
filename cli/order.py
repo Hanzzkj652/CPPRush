@@ -28,7 +28,7 @@ def get_orders() -> List[Dict]:
             "ticketCount": order["ticketCount"],
             "price": order["price"],
             "payType": order["payType"],
-            "createTime": datetime.utcfromtimestamp(order["createTime"] / 1000).strftime('%Y-%m-%d %H:%M:%S')
+            "createTime": datetime.fromtimestamp(order["createTime"] / 1000).strftime('%Y-%m-%d %H:%M:%S')
         } for order in orders]
     except Exception as e:
         logger.error(f"获取订单失败：{str(e)}")
@@ -76,7 +76,10 @@ def generate_qr_code(qr_data: str) -> str:
     return qr_path
 
 def order_cli():
-    
+    # 进入订单模块时自动显示订单列表
+    orders = get_orders()
+    display_orders(orders)
+
     while True:
         questions = [
             inquirer.List('action',
@@ -87,19 +90,19 @@ def order_cli():
                              '返回主菜单'
                          ])
         ]
-        
+
         answers = inquirer.prompt(questions)
         if answers['action'] == '刷新订单列表':
             orders = get_orders()
             display_orders(orders)
             
         elif answers['action'] == '支付订单':
-            # orders = get_orders()
+            orders = get_orders()
             if not orders:
                 logger.info("没有可支付的订单")
                 continue
-                
-            # display_orders(orders)
+
+            display_orders(orders)
             
             questions = [
                 inquirer.List('order_index',

@@ -28,7 +28,7 @@ def get_orders() -> List[Dict]:
             "ticketCount": order["ticketCount"],
             "price": order["price"],
             "payType": order["payType"],
-            "createTime": datetime.utcfromtimestamp(order["createTime"] / 1000).strftime('%Y-%m-%d %H:%M:%S')
+            "createTime": datetime.fromtimestamp(order["createTime"] / 1000).strftime('%Y-%m-%d %H:%M:%S')
         } for order in orders]
     except Exception as e:
         logger.error(f"获取订单失败：{str(e)}")

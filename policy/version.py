@@ -9,20 +9,29 @@ from loguru import logger
 
 version = "v1.0.6"
 
+def parse_version(version_str):
+    """解析版本号字符串，返回可比较的元组"""
+    # 移除 'v' 前缀并分割
+    version_str = version_str.lstrip('v')
+    try:
+        return tuple(int(x) for x in version_str.split('.'))
+    except (ValueError, AttributeError):
+        return (0, 0, 0)
+
 def check_version():
     """版本更新检查"""
     try:
         url = f"https://api.github.com/repos/Hanzzkj652/CPPRush/releases/latest"
-        response = requests.get(url, 
-                               timeout=5, 
+        response = requests.get(url,
+                               timeout=5,
                                verify=certifi.where(),
-                               ) 
+                               )
         # response.raise_for_status()
         current_version = version
         if response.status_code == 200:
             latest_info = response.json()
             latest_ver = latest_info.get("tag_name", "v0.0.0")
-            if latest_ver > current_version:
+            if parse_version(latest_ver) > parse_version(current_version):
                 logger.warning(f"⚠️ 检测到新版本")
                 logger.info(f"当前版本: {current_version},🆕最新版本: {latest_ver}")
                 logger.info(f"更新说明: {latest_info.get('body', '暂无更新说明')}")

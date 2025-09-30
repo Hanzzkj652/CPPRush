@@ -11,6 +11,7 @@ retrying
 tabulate
 wheel
 inquirer
+questionary
 logtail
 urllib3
 sentry-sdk>=1.40.0

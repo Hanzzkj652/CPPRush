@@ -76,7 +76,10 @@ def generate_qr_code(qr_data: str) -> str:
     return qr_path
 
 def order_cli():
-    
+    # 进入订单模块时自动显示订单列表
+    orders = get_orders()
+    display_orders(orders)
+
     while True:
         questions = [
             inquirer.List('action',
@@ -87,7 +90,7 @@ def order_cli():
                              '返回主菜单'
                          ])
         ]
-        
+
         answers = inquirer.prompt(questions)
         if answers['action'] == '刷新订单列表':
             orders = get_orders()

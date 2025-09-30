@@ -191,9 +191,11 @@ def settings_cli():
         config_path = os.path.join(config_dir, filename_filter(detail) + ".json")
         with open(config_path, 'w', encoding='utf-8') as f:
             json.dump(config, f, ensure_ascii=False, indent=4)
-            
+
         # 记录用户操作
         capture_action("config_saved", buyer_count=len(buyer_indices))
+        logger.success(f"✅ 配置已成功保存！")
+        logger.info(f"配置文件路径：{config_path}")
         logger.debug(json.dumps(config, ensure_ascii=False, indent=2))
         logger.info("按回车键返回主菜单...")
         input()

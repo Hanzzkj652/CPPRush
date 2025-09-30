@@ -280,8 +280,15 @@ def go_cli():
                     
                     # 使用系统默认程序打开二维码图片
                     try:
-                        os.startfile(qr_path)
-                    except:
+                        import platform
+                        system = platform.system()
+                        if system == 'Windows':
+                            os.startfile(qr_path)
+                        elif system == 'Darwin':  # macOS
+                            os.system(f'open "{qr_path}"')
+                        else:  # Linux
+                            os.system(f'xdg-open "{qr_path}"')
+                    except Exception as e:
                         logger.warning(f"无法自动打开图片，请手动访问: {qr_path}")
 
                     logger.info(f"请使用微信扫描二维码完成支付，二维码已保存到：{qr_path}")

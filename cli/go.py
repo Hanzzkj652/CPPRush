@@ -202,6 +202,7 @@ def go_cli():
                             pass
                         break
                 else:
+                    logger.warning("开票时间已过，立即开始抢票")
                     break
         
         # 开始抢票

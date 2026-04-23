@@ -1,6 +1,7 @@
 # CPPRush - CPP抢票工具
 
 CPPRush是一个专为AllCPP平台（AllCPP）设计的自动抢票工具，帮助用户在各类热门活动中更快速地抢到心仪的票。  
+- 奇谷米脚本（抢 CP ，作者本人）：[qigumi-ticket](https://github.com/cppticket/qigumi-ticket)
 
 ## 项目状态：恢复维护
 项目现已恢复常规维护与更新。
@@ -12,7 +13,6 @@ CPPRush是一个专为AllCPP平台（AllCPP）设计的自动抢票工具，帮�
 
 ## 技术突破通知
 经逆向工程分析，新版APP核心接口协议已取得技术突破与兼容性验证。此信息严格限用于技术研究、授权调试。使用时请遵守相关法律与协议约定。 
-> `sign` 算法现已开源，请访问 [cppticket/cppsign-app](https://github.com/cppticket/cppsign-app) 获取。本项目后续也将逐步迁移至 `cppticket` 组织下。请注意，本次开源的 `sign` 算法仅此一版，后续将不再提供更新。
 
 > **本项目为闭源软件，仅对本项目官方群（QQ群）内经授权的用户提供使用与支持。但仍保留旧版本代码**  
 > 源码及部分工具不对外公开，未经群内授权不得传播、复制或以任何形式重新发布。加入官方群后可申请获取使用授权和专属工具。  
@@ -26,6 +26,7 @@ CPPRush是一个专为AllCPP平台（AllCPP）设计的自动抢票工具，帮�
 ## 使用方法
 
 - 详细的使用方法请查看[用户使用文档](https://docs-cpprush.netlify.app/)
+
 
 ## 交流群组
 

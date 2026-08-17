@@ -1,8 +1,16 @@
 # CPPRush - CPP抢票工具
 
-CPPRush是一个专为AllCPP平台（AllCPP）设计的自动抢票工具，帮助用户在各类热门活动中更快速地抢到心仪的票。  
-- 奇谷米脚本（抢 CP ，作者本人）：[qigumi-ticket](https://github.com/cppticket/qigumi-ticket)
+> [!IMPORTANT]
+> 本项目公告：**杜绝所有黄牛行为和程序买卖**，严禁用于倒卖、代抢牟利或任何商业用途。
 
+CPPRush是一个专为AllCPP平台（AllCPP）设计的自动抢票工具，帮助用户在各类热门活动中更快速地抢到心仪的票。  
+
+## 作者名下脚本
+
+- 小芒平台脚本（抢 CP，作者本人）：[XM_Ticket](https://github.com/cppticket/XM_Ticket)
+- 奇谷米脚本（抢 CP，作者本人）：[qigumi-ticket](https://github.com/cppticket/qigumi-ticket)
+
+>小芒脚本不得用于其它演唱会门票
 ## 项目状态：恢复维护
 项目现已恢复常规维护与更新。
 
